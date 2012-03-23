@@ -1,66 +1,210 @@
 <head>
+	<script>
+	/* Simple JavaScript Inheritance
+ * By John Resig http://ejohn.org/
+ * MIT Licensed.
+ */
+// Inspired by base2 and Prototype
+(function(){
+  var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
+
+  // The base Class implementation (does nothing)
+  this.Class = function(){};
+ 
+  // Create a new Class that inherits from this class
+  Class.extend = function(prop) {
+    var _super = this.prototype;
+   
+    // Instantiate a base class (but only create the instance,
+    // don't run the init constructor)
+    initializing = true;
+    var prototype = new this();
+    initializing = false;
+   
+    // Copy the properties over onto the new prototype
+    for (var name in prop) {
+      // Check if we're overwriting an existing function
+      prototype[name] = typeof prop[name] == "function" &&
+        typeof _super[name] == "function" && fnTest.test(prop[name]) ?
+        (function(name, fn){
+          return function() {
+            var tmp = this._super;
+           
+            // Add a new ._super() method that is the same method
+            // but on the super-class
+            this._super = _super[name];
+           
+            // The method only need to be bound temporarily, so we
+            // remove it when we're done executing
+            var ret = fn.apply(this, arguments);       
+            this._super = tmp;
+           
+            return ret;
+          };
+        })(name, prop[name]) :
+        prop[name];
+    }
+   
+    // The dummy class constructor
+    function Class() {
+      // All construction is actually done in the init method
+      if ( !initializing && this.init )
+        this.init.apply(this, arguments);
+    }
+   
+    // Populate our constructed prototype object
+    Class.prototype = prototype;
+   
+    // Enforce the constructor to be what we expect
+    Class.prototype.constructor = Class;
+
+    // And make this class extendable
+    Class.extend = arguments.callee;
+   
+    return Class;
+  };
+})();
+
+	</script>
     <script src="http://www.html5canvastutorials.com/libraries/kinetic-v3.8.2.js">
     </script>
     <script>
-        window.onload = function(){
+
+		var tempImage = new Image();
+		tempImage.src = "cards/grenade.png";
+	
+		var Card = Class.extend({
+			init: function(id) {
+				this.id = id;
+				this.name = id.replace("_", "");
+				this.imageSrc = "cards/" + id + ".png";
+			},
+			drawCard: function(i, layer) {
+				
+				var currentCard = new Kinetic.Image({
+					x: i * 30 + 210,
+					y: i * 18 + 140,
+					width: 108,
+					height: 178,
+					image: tempImage,
+					stroke: 'black',
+					strokeWidth: 4
+				});
+				var currentImage = new Image();
+				currentImage.onload = function() {
+					console.log('loooooooooooad');
+					console.log(currentImage);
+					currentCard.setImage(currentImage);
+					console.log(currentCard);
+				}
+				currentImage.src = this.imageSrc;
+				
+				
+				
+				currentCard.on("mouseover", function(){
+					document.body.style.cursor = "pointer";
+				});
+				currentCard.on("mouseout", function(){
+					document.body.style.cursor = "default";
+				});
+				currentCard.on("mousedown", function(){
+					this.moveToTop();
+					this.draggable(true);
+					layer.draw();
+				});
+				currentCard.on("dragend", function() {
+					this.draggable(false);
+				});
+					
+				
+				
+				return currentCard;
+			}
+		});
+		
+		var JunkCard = Card.extend({
+			init: function(id, type, size, strength){
+				this._super(id);
+				this.type = type;
+				this.size = size;
+				this.strength = strength;
+			}
+		});
+		
+		var AttackCard = Card.extend({
+			init: function(id, type, damage){
+				this._super(id);
+				this.type = type;
+				this.damage = damage;
+			}
+		});
+		
+		var ReinforcementCard = Card.extend({
+			init: function(id, strength){
+				this._super(id);
+				this.strength = strength;
+			}
+		});
+		
+		var CardDeck = Class.extend({
+			init: function(){
+				this.cards = [
+					new AttackCard("hand_grenade", "throwing", 4),
+					new AttackCard("bomb", "throwing", 4),
+					new JunkCard("mannequin", "ornament", 2, 2),
+					new JunkCard("crash_test_dummy", "ornament", 2, 2),
+					new ReinforcementCard("yakuza", 2),
+					new ReinforcementCard("protection_racket", 2),
+				];
+			},
+			shuffle: function() {
+				var tmp, current, top = this.cards.length;
+
+				if(top) while(--top) {
+					current = Math.floor(Math.random() * (top + 1));
+					tmp = this.cards[current];
+					this.cards[current] = this.cards[top];
+					this.cards[top] = tmp;
+				}
+			}
+		});	
+		
+		var deck = new CardDeck();
+		deck.shuffle();
+		
+		var gameBoard = Class.extend({
+			init: function() {
+				this.isNearArea = function(card, area){
+					var a = card;
+					var o = area;
+					if (a.x > o.x - 20 && a.x < o.x + 20 && a.y > o.y - 20 && a.y < o.y + 20) {
+						return true;
+					}
+					else {
+						return false;
+					}
+				}
+			}
+			
+		});
+		
+        window.onload = function() {
+		
             var stage = new Kinetic.Stage("container", 999, 999);
             var layer = new Kinetic.Layer();
 			
-			var imageUrls = ["cards/grenade.png","cards/grenade2.png","cards/junk1.png","cards/junk2.png","cards/reinforcement1.png","cards/reinforcement2.png"];
-			var cardImages = [];
-			var cards = [];
+			console.log(deck.cards.length);
 			
-			
-			for (var n = 0; n < imageUrls.length; n++) {
-                // anonymous function to induce scope
-                (function(){
-                    var i = n;
-					
-					
-					cardImages.push(new Image());
-					var currentImage = cardImages[cardImages.length-1];
-					
-					currentImage.onload = function() {
-						cards.push(new Kinetic.Image({
-							x: i * 30 + 210,
-							y: i * 18 + 140,
-							image: currentImage,
-							width: 108,
-							height: 178,
-							stroke: 'black',
-							strokeWidth: 4
-
-						}));
-						
-						var currentCard = cards[cards.length-1];
-						console.log(currentCard);
-						
-						currentCard.on("mouseover", function(){
-							document.body.style.cursor = "pointer";
-						});
-						currentCard.on("mouseout", function(){
-							document.body.style.cursor = "default";
-						});
-						currentCard.on("mousedown", function(){
-							console.log('asdasdads');
-							this.moveToTop();
-							this.draggable(true);
-							layer.draw();
-						});
-						currentCard.on("dragend", function() {
-							this.draggable(false);
-						});
-						
-						layer.add(currentCard);
-					};
-					
-					currentImage.src = imageUrls[i%imageUrls.length];
-                })();
-            }
-			
+			for (var n = 0; n < deck.cards.length; n++) {
+				(function(){
+					var i = n;
+					var c = deck.cards[i].drawCard(i, layer);
+					layer.add(c);
+				})();
+			}
 			
 			setTimeout(function() {
-				console.log('qwe');
+				console.log(layer);
 				stage.add(layer);
 			}, 1000);
         };
@@ -71,3 +215,4 @@
     </div>
 </body>
 </html>
+
