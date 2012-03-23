@@ -1,0 +1,73 @@
+<head>
+    <script src="http://www.html5canvastutorials.com/libraries/kinetic-v3.8.2.js">
+    </script>
+    <script>
+        window.onload = function(){
+            var stage = new Kinetic.Stage("container", 999, 999);
+            var layer = new Kinetic.Layer();
+			
+			var imageUrls = ["cards/grenade.png","cards/grenade2.png","cards/junk1.png","cards/junk2.png","cards/reinforcement1.png","cards/reinforcement2.png"];
+			var cardImages = [];
+			var cards = [];
+			
+			
+			for (var n = 0; n < imageUrls.length; n++) {
+                // anonymous function to induce scope
+                (function(){
+                    var i = n;
+					
+					
+					cardImages.push(new Image());
+					var currentImage = cardImages[cardImages.length-1];
+					
+					currentImage.onload = function() {
+						cards.push(new Kinetic.Image({
+							x: i * 30 + 210,
+							y: i * 18 + 140,
+							image: currentImage,
+							width: 108,
+							height: 178,
+							stroke: 'black',
+							strokeWidth: 4
+
+						}));
+						
+						var currentCard = cards[cards.length-1];
+						console.log(currentCard);
+						
+						currentCard.on("mouseover", function(){
+							document.body.style.cursor = "pointer";
+						});
+						currentCard.on("mouseout", function(){
+							document.body.style.cursor = "default";
+						});
+						currentCard.on("mousedown", function(){
+							console.log('asdasdads');
+							this.moveToTop();
+							this.draggable(true);
+							layer.draw();
+						});
+						currentCard.on("dragend", function() {
+							this.draggable(false);
+						});
+						
+						layer.add(currentCard);
+					};
+					
+					currentImage.src = imageUrls[i%imageUrls.length];
+                })();
+            }
+			
+			
+			setTimeout(function() {
+				console.log('qwe');
+				stage.add(layer);
+			}, 1000);
+        };
+    </script>
+</head>
+<body onmousedown="return false;">
+    <div id="container">
+    </div>
+</body>
+</html>
